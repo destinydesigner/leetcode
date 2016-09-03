@@ -1,11 +1,10 @@
-/**
- * Definition for singly-linked list.
- * struct ListNode {
- *      int val;
- *      ListNode *next;
- *      ListNode(int x) : val(x), next(NULL) {}
- * };
- * */
+#include <stdio.h>
+
+struct ListNode {
+     int val;
+     ListNode *next;
+     ListNode(int x) : val(x), next(NULL) {}
+};
 
 class Solution {
 public:
@@ -22,7 +21,7 @@ public:
             p = &(*p)->next;
             l1 = l1 ? l1->next : NULL;
             l2 = l2->next;
-            
+
             if (l2 == NULL)
             {
                 l2 = l1;
@@ -38,4 +37,3 @@ public:
         return result;
     }
 };
-

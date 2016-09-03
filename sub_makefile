@@ -1,0 +1,26 @@
+INCLUDE = -I./ \
+ -I$(GTEST_INCLUDE_PATH) \
+ -I$(GMOCK_INCLUDE_PATH) \
+
+LIB = \
+	../lib/gtest-all.o \
+	../lib/gmock-all.o \
+	../lib/gmock_main.o \
+
+OUTPUT = unittest
+
+OBJECTS = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
+
+all:$(OUTPUT)
+
+.SUFFIXES: .o .cpp
+
+.cpp.o:
+	$(CXX) $(CPPFLAGS) $(INCLUDE) -c $(filter %.cpp, $^) -o $@
+
+$(OUTPUT): $(OBJECTS)
+	$(CXX) $(CPPFLAGS) ${LIB} $^ -o $@
+
+clean:
+	rm -f $(OUTPUT)
+	rm -f $(OBJECTS)
