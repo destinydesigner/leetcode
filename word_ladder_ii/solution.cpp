@@ -6,6 +6,8 @@
 #include <memory>
 #include <iterator>
 #include <algorithm>
+#include <queue>
+#include <functional>
 
 
 using namespace std;
@@ -47,18 +49,6 @@ class MyPath {
         return result;
     }
 
-    bool exists(const string *a)
-    {
-        for(int i = 0; i < m_path.size(); i++)
-        {
-            if (m_path[i] == a)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     void print()
     {
         return;
@@ -67,16 +57,6 @@ class MyPath {
             cout << *(m_path[i]) << ' ';
         }
         cout << endl;
-    }
-
-    void pop_back()
-    {
-        m_path.pop_back();
-    }
-
-    void reverse()
-    {
-        ::reverse(m_path.begin(), m_path.end());
     }
 
     vector<const string *>::const_iterator begin() const
@@ -89,16 +69,6 @@ class MyPath {
         return m_path.end();
     }
 
-    void extend(const MyPath &a)
-    {
-        for(vector<const string *>::const_iterator it = a.begin();
-            it != a.end();
-            it = next(it))
-        {
-            m_path.push_back(*it);
-        }
-    }
-
   private:
     vector<const string *>  m_path;
 };
@@ -106,14 +76,9 @@ class MyPath {
 
 class MyMap {
   public:
-    MyMap(const string &beginWord, const string &endWord, const unordered_set<string> &wordList)
+    MyMap(const string &beginWord, const string &endWord, unordered_set<string> &wordList):
+        word_list(wordList)
     {
-        for (unordered_set<string>::const_iterator it = wordList.begin();
-             it != wordList.end();
-             it = next(it))
-        {
-            this->word_list.insert(*it);
-        }
         this->word_list.insert(beginWord);
         this->word_list.insert(endWord);
 
@@ -121,6 +86,7 @@ class MyMap {
              iter1 != wordList.end();
              iter1 = next(iter1))
         {
+            this->adjacencies[&(*iter1)];
             for (unordered_set<string>::const_iterator iter2 = this->word_list.begin();
                  iter2 != wordList.end();
                  iter2 = next(iter2))
@@ -133,103 +99,7 @@ class MyMap {
         }
     }
 
-  public:
-    shared_ptr<vector<MyPath> > breadth_first_search(
-        const string &beginWord, const string &endWord)
-    {
-        shared_ptr<vector<MyPath> > result(NULL);
-
-        vector<shared_ptr<MyPath> > path_deque;
-        vector<shared_ptr<MyPath> > back_path_deque;
-
-        path_deque.push_back(shared_ptr<MyPath>(new MyPath(this->get_ptr(beginWord))));
-        back_path_deque.push_back(shared_ptr<MyPath>(new MyPath(this->get_ptr(endWord))));
-
-        while(true)
-        {
-            if (path_deque.empty() && back_path_deque.empty())
-            {
-                return result;
-            }
-            result = this->try_to_find_path(path_deque, back_path_deque);
-            if (result->size())
-            {
-                return result;
-            }
-            this->update_path_deque(path_deque);
-            result = this->try_to_find_path(path_deque, back_path_deque);
-            if (result->size())
-            {
-                return result;
-            }
-            this->update_path_deque(back_path_deque);
-        }
-        return result;
-    }
-
-  private:
-    void update_path_deque(vector<shared_ptr<MyPath> > &path_deque)
-    {
-        vector<shared_ptr<MyPath> > tmp_q(path_deque);
-        path_deque.clear();
-
-        for (vector<shared_ptr<MyPath> >::iterator q_it = tmp_q.begin();
-             q_it != tmp_q.end();
-             q_it = next(q_it))
-        {
-            shared_ptr<MyPath> current_path = *q_it;
-
-            const string *current_word(current_path->back());
-            vector<const string *> adjacencies = this->get_adjacencies(current_word);
-            for (vector<const string *>::const_iterator iter = adjacencies.begin();
-                 iter != adjacencies.end();
-                 iter = next(iter))
-            {
-                if (current_path->exists(*iter))
-                {
-                    continue;
-                }
-                shared_ptr<MyPath> new_path(
-                    new MyPath(*current_path));
-                new_path->push_back(*iter);
-                path_deque.push_back(new_path);
-                new_path->print();
-            }
-        }
-    }
-
-    shared_ptr<vector<MyPath> > try_to_find_path(
-        vector<shared_ptr<MyPath> > &a, vector<shared_ptr<MyPath> > &b)
-    {
-        // cout << "try to find path" << endl;
-        shared_ptr<vector<MyPath> > result(new vector<MyPath>);
-
-        for (vector<shared_ptr<MyPath> >::iterator iter1 = a.begin();
-             iter1 != a.end();
-             iter1 = next(iter1))
-        {
-            (*iter1)->print();
-            for (vector<shared_ptr<MyPath> >::iterator iter2 = b.begin();
-                 iter2 != b.end();
-                 iter2 = next(iter2))
-            {
-                (*iter2)->print();
-                if ((*iter1)->back() == (*iter2)->back())
-                {
-                    result->push_back(**iter1);
-                    MyPath tmp(**iter2);
-                    tmp.pop_back();
-                    tmp.reverse();
-                    result->back().extend(tmp);
-                }
-            }
-        }
-
-        return result;
-    }
-
-
-    const string * get_ptr(const string &a)
+    const string * get_ptr(const string &a) const
     {
         return &(*this->word_list.find(a));
     }
@@ -249,7 +119,7 @@ class MyMap {
         return count == 1;
     }
 
-    vector<const string *> get_adjacencies(const string *a)
+    const vector<const string *> &get_adjacencies(const string *a) const
     {
         /*
         cout << "adjacencies of " << *a << ": ";
@@ -259,14 +129,104 @@ class MyMap {
         }
         cout << endl;
         */
-        return this->adjacencies[a];
+        return this->adjacencies.at(a);
+    }
+
+    const unordered_set<string> &get_word_list() const
+    {
+        return word_list;
     }
 
   private:
-    unordered_set<string> word_list;
+    unordered_set<string> &word_list;
     map<const string *, vector<const string *> > adjacencies;
 };
 
+
+class Dijkstra {
+  public:
+    Dijkstra(const MyMap &map):
+        m_map(map)
+    {
+        const unordered_set<string> &word_list(this->m_map.get_word_list());
+        distance.clear();
+
+        for(unordered_set<string>::const_iterator it = word_list.begin();
+            it != word_list.end();
+            it = next(it))
+        {
+            distance[&(*it)] = 0x7fffffff;
+        }
+    }
+  public:
+    class my_less {
+      public:
+        bool operator() (const string *lhv, const string *rhv) const {
+            return distance[lhv] > distance[rhv];
+        }
+    };
+
+    shared_ptr<vector<MyPath> > shortest_paths(
+        const string &beginWord, const string &endWord)
+    {
+        shared_ptr<vector<MyPath> > result(new vector<MyPath>);
+        priority_queue<const string *, vector<const string *>, my_less> distance_q;
+        distance_q.push(m_map.get_ptr(beginWord));
+        distance[m_map.get_ptr(beginWord)] = 0;
+        while(distance_q.size())
+        {
+            const string *current_word = distance_q.top();
+            vector<const string *> adjacencies = this->m_map.get_adjacencies(current_word);
+            for (vector<const string *>::const_iterator it = adjacencies.begin();
+                 it != adjacencies.end();
+                 it = next(it))
+            {
+                if (distance[*it] > distance[current_word] + 1)
+                {
+                    distance[*it] = distance[current_word] + 1;
+                    distance_q.push(*it);
+                }
+            }
+            distance_q.pop();
+        }
+
+        queue<MyPath> paths;
+        paths.push(MyPath(this->m_map.get_ptr(beginWord)));
+
+        while(paths.size())
+        {
+            MyPath &current_path(paths.front());
+
+            vector<const string *> adjacencies = this->m_map.get_adjacencies(current_path.back());
+            for (vector<const string *>::const_iterator it = adjacencies.begin();
+                 it != adjacencies.end();
+                 it = next(it))
+            {
+                if (distance[current_path.back()] + 1 == distance[*it])
+                {
+                    MyPath tmp(current_path);
+                    tmp.push_back(*it);
+                    if (**it == endWord)
+                    {
+                        result->push_back(tmp);
+                        break;
+                    }
+                    paths.push(tmp);
+                }
+            }
+            paths.pop();
+        }
+
+        return result;
+    }
+  private:
+    const MyMap &m_map;
+    static map<const string *, int> distance;
+};
+
+#ifndef __TEST__
+map<const string *, int> Dijkstra::distance;
+#endif
 
 class Solution {
   public:
@@ -276,12 +236,14 @@ class Solution {
         MyMap my_map(beginWord, endWord, wordList);
         shared_ptr<vector<MyPath> > tmp_result;
 
-        tmp_result = my_map.breadth_first_search(beginWord, endWord);
+        Dijkstra algorithm(my_map);
+        tmp_result = algorithm.shortest_paths(beginWord, endWord);
 
         vector<vector<string> > result;
 
         for (int i = 0; i < tmp_result->size(); i++)
         {
+            //tmp_result->at(i).print();
             result.push_back(tmp_result->at(i).get_vector());
         }
 
