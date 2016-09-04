@@ -6,7 +6,7 @@
 #include <memory>
 #include <iterator>
 #include <algorithm>
-#include <queue>
+#include <deque>
 
 
 using namespace std;
@@ -17,6 +17,10 @@ class MyPath {
     MyPath(const string *a)
     {
         m_path.push_back(a);
+    }
+    MyPath(const MyPath &copy)
+    {
+        m_path.insert(m_path.end(), copy.begin(), copy.end());
     }
   public:
     void push_back(const string *a)
@@ -58,11 +62,42 @@ class MyPath {
 
     void print()
     {
+        return;
         for(int i = 0; i < m_path.size(); i++)
         {
             cout << *(m_path[i]) << ' ';
         }
         cout << endl;
+    }
+
+    void pop_back()
+    {
+        m_path.pop_back();
+    }
+
+    void reverse()
+    {
+        ::reverse(m_path.begin(), m_path.end());
+    }
+
+    vector<const string *>::const_iterator begin() const
+    {
+        return m_path.begin();
+    }
+
+    vector<const string *>::const_iterator end() const
+    {
+        return m_path.end();
+    }
+
+    void extend(const MyPath &a)
+    {
+        for(vector<const string *>::const_iterator it = a.begin();
+            it != a.end();
+            it = next(it))
+        {
+            m_path.push_back(*it);
+        }
     }
 
   private:
@@ -91,7 +126,7 @@ class MyMap {
                  iter2 != wordList.end();
                  iter2 = next(iter2))
             {
-                if (this->can_connect(*iter1, *iter2))
+                if (this->can_adjacent(*iter1, *iter2))
                 {
                     this->adjacencies[&(*iter1)].push_back(&(*iter2));
                 }
@@ -103,24 +138,49 @@ class MyMap {
     shared_ptr<vector<MyPath> > breadth_first_search(
         const string &beginWord, const string &endWord)
     {
-        shared_ptr<vector<MyPath> > result(new vector<MyPath>);
+        shared_ptr<vector<MyPath> > result(NULL);
 
-        queue<shared_ptr<MyPath> > path_queue;
-        queue<shared_ptr<MyPath> > back_path_queue;
+        deque<shared_ptr<MyPath> > path_deque;
+        deque<shared_ptr<MyPath> > back_path_deque;
 
-        path_queue.push(shared_ptr<MyPath>(new MyPath(this->get_ptr(beginWord))));
-        path_queue.push(shared_ptr<MyPath>(new MyPath(this->get_ptr(endWord))));
+        path_deque.push_back(shared_ptr<MyPath>(new MyPath(this->get_ptr(beginWord))));
+        back_path_deque.push_back(shared_ptr<MyPath>(new MyPath(this->get_ptr(endWord))));
 
-        int shortest_path_lenght = 0x7fffffff;
-
-        while(path_queue.size())
+        while(true)
         {
-            shared_ptr<MyPath> current_path = path_queue.front();
-            if (current_path->size() >= shortest_path_lenght)
+            if (path_deque.empty() && back_path_deque.empty())
             {
-                path_queue.pop();
-                continue;
+                return result;
             }
+            result = this->try_to_find_path(path_deque, back_path_deque);
+            if (result->size())
+            {
+                return result;
+            }
+            this->update_path_deque(path_deque);
+            result = this->try_to_find_path(path_deque, back_path_deque);
+            if (result->size())
+            {
+                return result;
+            }
+            this->update_path_deque(back_path_deque);
+        }
+        return result;
+    }
+
+  private:
+    void update_path_deque(deque<shared_ptr<MyPath> > &path_deque)
+    {
+        deque<shared_ptr<MyPath> >::iterator q_begin = path_deque.begin();
+        deque<shared_ptr<MyPath> >::iterator q_end = path_deque.end();
+        vector<shared_ptr<MyPath> > tmp_q(path_deque.begin(), path_deque.end());
+        path_deque.clear();
+
+        for (vector<shared_ptr<MyPath> >::iterator q_it = tmp_q.begin();
+             q_it != tmp_q.end();
+             q_it = next(q_it))
+        {
+            shared_ptr<MyPath> current_path = *q_it;
 
             const string *current_word(current_path->back());
             vector<const string *> adjacencies = this->get_adjacencies(current_word);
@@ -135,30 +195,49 @@ class MyMap {
                 shared_ptr<MyPath> new_path(
                     new MyPath(*current_path));
                 new_path->push_back(*iter);
-                path_queue.push(new_path);
+                path_deque.push_back(new_path);
+                new_path->print();
+            }
+        }
+    }
 
-                if (*iter == this->get_ptr(endWord))
+    shared_ptr<vector<MyPath> > try_to_find_path(
+        deque<shared_ptr<MyPath> > &a, deque<shared_ptr<MyPath> > &b)
+    {
+        // cout << "try to find path" << endl;
+        shared_ptr<vector<MyPath> > result(new vector<MyPath>);
+
+        for (deque<shared_ptr<MyPath> >::iterator iter1 = a.begin();
+             iter1 != a.end();
+             iter1 = next(iter1))
+        {
+            (*iter1)->print();
+            for (deque<shared_ptr<MyPath> >::iterator iter2 = b.begin();
+                 iter2 != b.end();
+                 iter2 = next(iter2))
+            {
+                (*iter2)->print();
+                if ((*iter1)->back() == (*iter2)->back())
                 {
-                    shortest_path_lenght = new_path->size();
-                    result->push_back(*new_path);
+                    result->push_back(**iter1);
+                    MyPath tmp(**iter2);
+                    tmp.pop_back();
+                    tmp.reverse();
+                    result->back().extend(tmp);
                 }
             }
-            path_queue.pop();
         }
+
         return result;
     }
 
-  private:
-    void update_path_queue(queue<shared_ptr<MyPath> > &path_queue)
-    {
-    }
 
     const string * get_ptr(const string &a)
     {
         return &(*this->word_list.find(a));
     }
 
-    bool can_connect(const string &a, const string &b)
+    bool can_adjacent(const string &a, const string &b)
     {
         int count = 0;
         for (string::const_iterator ia = a.begin(), ib = b.begin();
@@ -175,6 +254,14 @@ class MyMap {
 
     vector<const string *> get_adjacencies(const string *a)
     {
+        /*
+        cout << "adjacencies of " << *a << ": ";
+        for (int i = 0; i < this->adjacencies[a].size(); i++)
+        {
+            cout << *this->adjacencies[a][i] << ' ';
+        }
+        cout << endl;
+        */
         return this->adjacencies[a];
     }
 

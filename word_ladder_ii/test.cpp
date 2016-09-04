@@ -20,8 +20,8 @@ TEST(Solution, default) {
     wordList.insert(string("log"));
     vector<vector<string> > result;
     result = s.findLadders(string("hit"), string("cog"), wordList);
-    ASSERT_EQ(5, wordList.size());
     ASSERT_EQ(2, result.size());
+    ASSERT_EQ(5, result[0].size());
 }
 
 TEST(Solution, no_path)
@@ -40,6 +40,7 @@ TEST(Solution, begin_to_end_directly)
     vector<vector<string> > result;
     result = s.findLadders(string("hit"), string("hot"), wordList);
     ASSERT_EQ(1, result.size());
+    ASSERT_EQ(2, result[0].size());
 }
 
 TEST(Solution, TLE)
@@ -143,9 +144,6 @@ TEST(Solution, TLE)
     wordList.insert("ye");
     vector<vector<string> > result;
     result = s.findLadders(string("qa"), string("sq"), wordList);
-    for (int i = 0; i < result.size(); i++)
-    {
-    }
     ASSERT_EQ(51, result.size());
 }
 
@@ -755,5 +753,5 @@ TEST(Solution, SIX_HUNDRED_WORDS)
     wordList.insert("mob" );
     vector<vector<string> > result;
     result = s.findLadders(string("cet"), string("ism"), wordList);
-    ASSERT_EQ(51, result.size());
+    ASSERT_EQ(3, result.size());
 }
