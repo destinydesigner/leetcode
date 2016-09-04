@@ -6,7 +6,6 @@
 #include <memory>
 #include <iterator>
 #include <algorithm>
-#include <deque>
 
 
 using namespace std;
@@ -140,8 +139,8 @@ class MyMap {
     {
         shared_ptr<vector<MyPath> > result(NULL);
 
-        deque<shared_ptr<MyPath> > path_deque;
-        deque<shared_ptr<MyPath> > back_path_deque;
+        vector<shared_ptr<MyPath> > path_deque;
+        vector<shared_ptr<MyPath> > back_path_deque;
 
         path_deque.push_back(shared_ptr<MyPath>(new MyPath(this->get_ptr(beginWord))));
         back_path_deque.push_back(shared_ptr<MyPath>(new MyPath(this->get_ptr(endWord))));
@@ -169,11 +168,9 @@ class MyMap {
     }
 
   private:
-    void update_path_deque(deque<shared_ptr<MyPath> > &path_deque)
+    void update_path_deque(vector<shared_ptr<MyPath> > &path_deque)
     {
-        deque<shared_ptr<MyPath> >::iterator q_begin = path_deque.begin();
-        deque<shared_ptr<MyPath> >::iterator q_end = path_deque.end();
-        vector<shared_ptr<MyPath> > tmp_q(path_deque.begin(), path_deque.end());
+        vector<shared_ptr<MyPath> > tmp_q(path_deque);
         path_deque.clear();
 
         for (vector<shared_ptr<MyPath> >::iterator q_it = tmp_q.begin();
@@ -202,17 +199,17 @@ class MyMap {
     }
 
     shared_ptr<vector<MyPath> > try_to_find_path(
-        deque<shared_ptr<MyPath> > &a, deque<shared_ptr<MyPath> > &b)
+        vector<shared_ptr<MyPath> > &a, vector<shared_ptr<MyPath> > &b)
     {
         // cout << "try to find path" << endl;
         shared_ptr<vector<MyPath> > result(new vector<MyPath>);
 
-        for (deque<shared_ptr<MyPath> >::iterator iter1 = a.begin();
+        for (vector<shared_ptr<MyPath> >::iterator iter1 = a.begin();
              iter1 != a.end();
              iter1 = next(iter1))
         {
             (*iter1)->print();
-            for (deque<shared_ptr<MyPath> >::iterator iter2 = b.begin();
+            for (vector<shared_ptr<MyPath> >::iterator iter2 = b.begin();
                  iter2 != b.end();
                  iter2 = next(iter2))
             {
