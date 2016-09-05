@@ -34,7 +34,7 @@ class MyPath {
         return m_path.size();
     }
 
-    const string * back()
+    const string * back() const
     {
         return m_path.back();
     }
@@ -51,7 +51,7 @@ class MyPath {
 
     void print()
     {
-        return;
+//        return;
         for(int i = 0; i < m_path.size(); i++)
         {
             cout << *(m_path[i]) << ' ';
@@ -76,17 +76,28 @@ class MyPath {
 
 class MyMap {
   public:
-    MyMap(const string &beginWord, const string &endWord, unordered_set<string> &wordList):
-        word_list(wordList)
+    MyMap(const string &beginWord, const string &endWord, unordered_set<string> &wordList)
     {
+        for (unordered_set<string>::iterator it = wordList.begin();
+             it != wordList.end();
+             it = next(it))
+        {
+            this->word_list.insert(*it);
+        }
         this->word_list.insert(beginWord);
         this->word_list.insert(endWord);
+
+        for (unordered_set<string>::const_iterator it = this->word_list.begin();
+             it != this->word_list.end();
+             it = next(it))
+        {
+            this->adjacencies[&(*it)];
+        }
 
         for (unordered_set<string>::const_iterator iter1 = this->word_list.begin();
              iter1 != wordList.end();
              iter1 = next(iter1))
         {
-            this->adjacencies[&(*iter1)];
             for (unordered_set<string>::const_iterator iter2 = this->word_list.begin();
                  iter2 != wordList.end();
                  iter2 = next(iter2))
@@ -123,12 +134,13 @@ class MyMap {
     {
         /*
         cout << "adjacencies of " << *a << ": ";
-        for (int i = 0; i < this->adjacencies[a].size(); i++)
+        for (int i = 0; i < this->adjacencies.at(a).size(); i++)
         {
-            cout << *this->adjacencies[a][i] << ' ';
+            cout << *this->adjacencies.at(a)[i] << ' ';
         }
         cout << endl;
         */
+
         return this->adjacencies.at(a);
     }
 
@@ -138,7 +150,7 @@ class MyMap {
     }
 
   private:
-    unordered_set<string> &word_list;
+    unordered_set<string> word_list;
     map<const string *, vector<const string *> > adjacencies;
 };
 
@@ -161,8 +173,8 @@ class Dijkstra {
   public:
     class my_less {
       public:
-        bool operator() (const string *lhv, const string *rhv) const {
-            return distance[lhv] > distance[rhv];
+        bool operator() (const MyPath &lhv, const MyPath &rhv) const {
+            return distance[lhv.back()] > distance[rhv.back()];
         }
     };
 
@@ -170,48 +182,46 @@ class Dijkstra {
         const string &beginWord, const string &endWord)
     {
         shared_ptr<vector<MyPath> > result(new vector<MyPath>);
-        priority_queue<const string *, vector<const string *>, my_less> distance_q;
-        distance_q.push(m_map.get_ptr(beginWord));
+        priority_queue<MyPath, vector<MyPath>, my_less> paths;
+        paths.push(MyPath(m_map.get_ptr(beginWord)));
         distance[m_map.get_ptr(beginWord)] = 0;
-        while(distance_q.size())
+        int shortest_length = 0x7fffffff;
+        while(!paths.empty())
         {
-            const string *current_word = distance_q.top();
-            vector<const string *> adjacencies = this->m_map.get_adjacencies(current_word);
-            for (vector<const string *>::const_iterator it = adjacencies.begin();
-                 it != adjacencies.end();
-                 it = next(it))
-            {
-                if (distance[*it] > distance[current_word] + 1)
-                {
-                    distance[*it] = distance[current_word] + 1;
-                    distance_q.push(*it);
-                }
-            }
-            distance_q.pop();
-        }
-
-        queue<MyPath> paths;
-        paths.push(MyPath(this->m_map.get_ptr(beginWord)));
-
-        while(paths.size())
-        {
-            MyPath &current_path(paths.front());
-
+            MyPath current_path(paths.top());
             vector<const string *> adjacencies = this->m_map.get_adjacencies(current_path.back());
             for (vector<const string *>::const_iterator it = adjacencies.begin();
                  it != adjacencies.end();
                  it = next(it))
             {
-                if (distance[current_path.back()] + 1 == distance[*it])
+                if (distance[*it] >= distance[current_path.back()] + 1)
                 {
+                    distance[*it] = distance[current_path.back()] + 1;
                     MyPath tmp(current_path);
                     tmp.push_back(*it);
-                    if (**it == endWord)
+
+                    if (**it != endWord)
+                    {
+                        if (tmp.size() < shortest_length)
+                        {
+                            paths.push(tmp);
+                        }
+                    }
+                    else if (result->empty())
                     {
                         result->push_back(tmp);
-                        break;
+                        shortest_length = tmp.size();
                     }
-                    paths.push(tmp);
+                    else if (tmp.size() < result->at(0).size())
+                    {
+                        result->clear();
+                        result->push_back(tmp);
+                        shortest_length = tmp.size();
+                    }
+                    else if (tmp.size() == result->at(0).size())
+                    {
+                        result->push_back(tmp);
+                    }
                 }
             }
             paths.pop();
@@ -243,7 +253,7 @@ class Solution {
 
         for (int i = 0; i < tmp_result->size(); i++)
         {
-            //tmp_result->at(i).print();
+            tmp_result->at(i).print();
             result.push_back(tmp_result->at(i).get_vector());
         }
 
